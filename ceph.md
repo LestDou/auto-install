@@ -90,6 +90,23 @@ Ceph提供了cephx认证系统来认证用户和daemons，Client和Monitor的key
 1. 在k8s集群中用etcd写入/etc/ceph/下四个配置文件和/var/lib/ceph/bootstrap-rgw|bootstrap-mds|bootstrap-osd/ceph.keyring三个keyring文件，其他机器安装mon时从etcd中读取。这种方法的缺点是要指定第一台机器，不能全自动安装。
 2. ceph支持etcd和consul两种KV backends，所有的机器执行相同的脚本，实现全自动化安装。
 
+在你安装和配置完Ceph存储集群后，下一个任务是存储供应，这个过程是以block，file或object存储的形式分配存储空间或容量给物理或虚拟服务器。
+linux内核在2.6.34以后集成了CEPH的模块。使用Ceph的块存储有两种路径，一种是利用QEMU走librbd路径，librbd是基于librados的块设备接口实现，通过librbd创建一个块设备，rbd_aio_read()/rdb_aio_write()读写数据到osd；另一种是使用kernel module，走kernel的路径。前者主要为虚拟机提供块存储设备，后者主要为Host提供块设备支持。
+##### 1.配置ceph客户端
+ - lsb_release -a , uname -r 
+ - modprobe rbd---检查kernel对RBD的支持。
+ - 安装ceph
+ - 拷贝ceph.conf到节点
+ - ceph与集群间keyring，/etc/ceph/ceph.client.rbd.keyring放到/etc/ceph/keyring
+
+##### 2.新建Ceph block device
+rbd create rbd1 --size 10240 --name client.rbd
+rbd ls --name client.rbd
+rbd --image rbd1 info --name client.rbd
+##### 3.映射Ceph block device到client或docker volume
+rbd map --image rbd1 --name client.rbd
+
+
 ### rbd volume挂载
 根据ceph/ceph-docker项目，通过Docker容器将Ceph RBD volume挂载到主机。
 运行docker build . 
