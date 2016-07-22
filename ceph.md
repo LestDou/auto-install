@@ -92,6 +92,18 @@ Ceph提供了cephx认证系统来认证用户和daemons，Client和Monitor的key
 
 在你安装和配置完Ceph存储集群后，下一个任务是存储供应，这个过程是以block，file或object存储的形式分配存储空间或容量给物理或虚拟服务器。
 linux内核在2.6.34以后集成了CEPH的模块。使用Ceph的块存储有两种路径，一种是利用QEMU走librbd路径，librbd是基于librados的块设备接口实现，通过librbd创建一个块设备，rbd_aio_read()/rdb_aio_write()读写数据到osd；另一种是使用kernel module，走kernel的路径。前者主要为虚拟机提供块存储设备，后者主要为Host提供块设备支持。
+
+librados 就是一个该协议的编码库形式的实现。所有的 Ceph clients 要么使用 librados 要么使用其封装的更高层 API 与对象存储进行交互。比如，librbd 使用 librados 提供 Ceph 客户端与 RBD 交互 API。
+一个 Ceph client 通过 librados 存放或者读取数据块到 Ceph 中，需要经过以下步骤：
+
+    Client 调用 librados 连接到 Ceph monitor，获取 Cluster map。
+    当 client 要读或者写数据时，它创建一个与 pool 的 I/O Context。该 pool 关联有 ruleset，它定义了数据在 Ceph 存储集群中是怎么存放的。
+    client 通过 I/O Context 提供 object name 给 librados，它使用该 object name 和 cluster map 计算出 PG 和 OSD 来定位到数据的位置。
+    client 直接和 OSD Deamon 交互来读或者写数据。
+
+rbd命令行： 在 Ubuntu 上，你安装了 ceph-common 就可以得到该工具，其命令行格式为：
+
+![](http://images2015.cnblogs.com/blog/697113/201509/697113-20150925100559037-1388278685.jpg)
 ##### 1.配置ceph客户端
  - lsb_release -a , uname -r 
  - modprobe rbd---检查kernel对RBD的支持。
@@ -106,6 +118,8 @@ rbd --image rbd1 info --name client.rbd
 ##### 3.映射Ceph block device到client或docker volume
 rbd map --image rbd1 --name client.rbd
 
+### 寻址过程
+补上三层映射图。。
 
 ### rbd volume挂载
 根据ceph/ceph-docker项目，通过Docker容器将Ceph RBD volume挂载到主机。
